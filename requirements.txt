@@ -1,0 +1,1 @@
+# Essential for MVP. Lists dependencies like streamlit and pytest
