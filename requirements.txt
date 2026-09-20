@@ -1,1 +1,40 @@
-# Essential for MVP. Lists dependencies like streamlit and pytest
+A. Requirement -> File mapping
+
+SRS Requirement        | File(s) Responsible                              | Reason
+-----------------------|--------------------------------------------------|------------------------------------------------------------
+F-01 Client Profile    | client_ui.py, profile_service.py, client_profile.py | UI collects data; Service validates data (e.g. >0 household
+                       |                                                  | size); Domain models the entity.
+
+FR-02.2 48-hr Expiry   | inventory_service.py, inventory_ui.py            | Service sorts and tags the data; UI renders it in red text
+Highlight              |                                                  | (NFR-01).
+
+FR-03.1 Safe Packing   | hamper_service.py, hamper_ui.py                  | Service filters inventory based on client allergies; UI
+List                   |                                                  | displays the filtered list to the user.
+
+FR-04.2 Safety         | donor_ui.py, donation_service.py                 | UI provides the checkbox; Service rejects the submission
+Checklist              |                                                  | if the flag is False.
+
+F-05 / NFR-03 RBAC     | auth_service.py, main.py                         | main.py hides navigation tabs based on role;
+                       |                                                  | auth_service.py blocks unauthorized backend requests
+                       |                                                  | (defence-in-depth).
+
+FR-05.3 Audit Logging  | audit_service.py, access_log.py                  | Service listens for role changes/deletions and appends
+                       |                                                  | a record to access_log.json.
+
+NFR-07 Maintainability | Entire /src/ vs /app/ split                      | Ensures business logic can be tested in PyTest without
+                       |                                                  | launching Streamlit.
+
+
+
+=========================================================================================================================================
+
+
+
+
+B. Things We Should NOT Implement
+
+1. F-06 Automated SMS Pickup Alerts: Do not integrate Twilio or any messaging gateway.
+2. F-07 External Supply Chain Sync: Do not attempt to pull data from supermarket databases; all inventory is manually inputted.
+3. F-08 Automated System Reporting: Do not build graphing/analytics dashboards for grant applications.
+4. F-09 Client Pickup Scheduling: Clients cannot pre-book specific hamper collection times.
+5. SQL Databases: The SRS strictly mandates JSON file storage (Section 4.5). Do not use SQLite, PostgreSQL, or SQLAlchemy.
