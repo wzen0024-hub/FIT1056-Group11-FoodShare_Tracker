@@ -18,20 +18,29 @@ class InventoryService:
         validate_item(quantity, expiry_date, allergen_tags, dietary_tags)
         item = {"id": str(uuid4()), "name": name.strip(), "category": category.strip(),
                 "quantity": quantity, "expiry_date": str(expiry_date),
-                "allergen_tags": allergen_tags, "dietary_tags": dietary_tags,
+                # dict.fromkeys drops repeated tags while keeping the selection order
+                "allergen_tags": list(dict.fromkeys(allergen_tags)),
+                "dietary_tags": list(dict.fromkeys(dietary_tags)),
                 "issues": []}
         self.repository.update("inventory", lambda rows: rows.append(item))
         return item
 
     def list_items(self, actor):
+        """Inventory sorted by expiry (FR-02.2), including each item's saved issue flags (FR-02.7)."""
         require_role(actor, "Staff", "Volunteer", "Admin")
-        return [{**item, "expires_soon": expires_soon(item["expiry_date"])}
+        return [{**item, "expires_soon": expires_soon(item["expiry_date"]),
+                 "issues": item.get("issues", [])}  # records saved before flags existed
                 for item in sorted(self.repository.read("inventory"),
                                    key=lambda x: x["expiry_date"])]
 
     def flag_issue(self, actor, item_id, reason, comment):
+        """Attach an issue (reason + comment) to an item so the inventory list can show it (FR-02.7).
+
+        Only Staff and Volunteers may flag (Table 17). Flags accumulate in item["issues"];
+        reported_by stores a user id for traceability and is not shown on the inventory list.
+        """
         require_role(actor, "Staff", "Volunteer")
-        if reason not in {"Damaged", "Spoiled", "Incorrect count"} or not comment.strip():
+        if reason not in {"Damaged", "Spoiled", "Incorrect count"} or not (comment or "").strip():
             raise ValueError("Select a reason and write a comment")
 
         def flag(rows):

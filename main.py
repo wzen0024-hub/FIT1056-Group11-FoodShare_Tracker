@@ -14,6 +14,12 @@ from src.services.profile_service import ProfileService
 
 @st.cache_resource
 def services():
+    """Build the repository and services once per server process, shared by all sessions.
+
+    The data folder is fixed when this first runs (see JsonRepository for how it is
+    chosen), so a changed FOODSHARE_DATA_DIR needs a server restart. Tests call
+    st.cache_resource.clear() so that each test gets its own temporary folder.
+    """
     repository = JsonRepository()
     audit = AuditService(repository)
     profile = ProfileService(repository, audit)
@@ -36,6 +42,9 @@ def main():
     actor = st.session_state.user
     st.sidebar.write(f"Signed in: **{actor['username']}** ({actor['role']})")
     if st.sidebar.button("Log out"):
+        # Clear everything, not just "user", so no form state, flash message or
+        # remembered selection can appear for the next person on this browser (FR-05.11).
+        st.session_state.clear()
         st.session_state.user = None
         st.rerun()
 

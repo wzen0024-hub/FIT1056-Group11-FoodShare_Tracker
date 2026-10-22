@@ -7,8 +7,11 @@ def render(auth):
     if not auth.has_users():
         st.info("Create the initial administrator account to start.")
         with st.form("bootstrap"):
-            username = st.text_input("Admin username")
-            password = st.text_input("Admin password (8+ characters)", type="password")
+            # A brand-new credential pair: "new-password" lets the browser offer to save
+            # a new password for it.
+            username = st.text_input("Admin username", autocomplete="username")
+            password = st.text_input("Admin password (8+ characters)", type="password",
+                                     autocomplete="new-password")
             submitted = st.form_submit_button("Create admin")
         if submitted:
             try:
@@ -18,8 +21,12 @@ def render(auth):
                 st.error(str(error))
     st.subheader("Sign in")
     with st.form("login"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+        # Streamlit gives every password input autocomplete="new-password" unless told
+        # otherwise, which makes browsers suggest a strong NEW password on the sign-in
+        # form. These two values mark the pair as an existing login, so browsers and
+        # password managers offer the saved credentials instead.
+        username = st.text_input("Username", autocomplete="username")
+        password = st.text_input("Password", type="password", autocomplete="current-password")
         submitted = st.form_submit_button("Sign in")
     if submitted:
         try:
