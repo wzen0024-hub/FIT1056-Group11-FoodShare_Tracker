@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from uuid import uuid4
 
-from src.domain.donation_offer import validate_offer
+from src.domain.donation_offer import normalise_offer
 from src.services.auth_service import require_role
 
 
@@ -44,14 +44,26 @@ class DonationService:
         return self.repository.update("donations", add)
 
     def available_slots(self, actor, day=None):
+        """Bookable slots: not yet booked and still in the future, earliest first (FR-04.4).
+
+        `day` (a date or an ISO string) limits the result to that date (FR-04.5). An empty
+        list means "nothing free", which the donor screen turns into a prompt to pick
+        another date.
+        """
         require_role(actor, "Staff", "Donor")
         slots = self._state(self.repository.read("donations"))["slots"]
-        return [s for s in slots if not s["offer_id"] and (day is None or s["date"] == str(day))
-                and datetime.fromisoformat(f"{s['date']}T{s['start_time']}") > datetime.now()]
+        now = datetime.now()
+        open_slots = [s for s in slots if not s["offer_id"] and (day is None or s["date"] == str(day))
+                      and datetime.fromisoformat(f"{s['date']}T{s['start_time']}") > now]
+        return sorted(open_slots, key=lambda s: (s["date"], s["start_time"]))
+
+    def available_dates(self, actor):
+        """ISO dates (earliest first) that still have at least one bookable future slot."""
+        return sorted({slot["date"] for slot in self.available_slots(actor)})
 
     def submit_offer(self, actor, items):
         require_role(actor, "Donor")
-        validate_offer(items)
+        items = normalise_offer(items)  # trimmed names; rejects empty, blank, zero and repeated categories
         offer = {"id": str(uuid4()), "donor_id": actor["id"], "items": items,
                  "checklist_acknowledged": False, "slot_id": None}
 
@@ -68,6 +80,11 @@ class DonationService:
                 if o["donor_id"] == actor["id"]]
 
     def book(self, actor, offer_id, slot_id, checklist_acknowledged):
+        """Reserve one slot for one of the donor's own open offers and return the receipt (FR-04.2-04.4).
+
+        The checklist must be acknowledged. The slot check and the reservation happen inside
+        one repository update, so two donors cannot both obtain the same slot.
+        """
         require_role(actor, "Donor")
         if not checklist_acknowledged:
             raise ValueError("Acknowledge the food safety checklist before booking")

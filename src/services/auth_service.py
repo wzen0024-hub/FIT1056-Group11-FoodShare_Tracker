@@ -9,6 +9,11 @@ from src.domain.user import ROLES, public_user
 
 
 def require_role(actor, *roles):
+    """Raise PermissionError unless `actor` (the signed-in user dict) has one of `roles`.
+
+    Service methods that are restricted by role start with this check, so permissions
+    are enforced here and not only by the menu in main.py.
+    """
     if not actor or actor.get("role") not in roles:
         raise PermissionError("This action is not permitted for your role")
 
@@ -80,7 +85,23 @@ class AuthService:
         require_role(actor, "Admin")
         return [public_user(user) for user in self.repository.read("users")]
 
+    def editable_users(self, actor):
+        """Accounts this Admin may modify: every non-Admin account plus the Admin's own.
+
+        Another Admin's account is excluded (FR-05.5). change_user() enforces the same
+        rule, so the account selector in the UI and the service always agree.
+        """
+        return [user for user in self.list_users(actor)
+                if user["role"] != "Admin" or user["id"] == actor["id"]]
+
     def change_user(self, actor, user_id, *, role=None, active=None):
+        """Change an account's role and/or active flag (FR-05.4); only Admins may call this.
+
+        Another Admin's account cannot be modified (FR-05.5), and an Admin cannot remove
+        their own access. A changed role is stored immediately, but it only affects the
+        user at their next login because the session keeps the role copied at sign-in
+        (FR-05.6). Role and enable/disable changes are written to the access log (FR-05.3).
+        """
         require_role(actor, "Admin")
         if role is not None and role not in ROLES:
             raise ValueError("Invalid role")
