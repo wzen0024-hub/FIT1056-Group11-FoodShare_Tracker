@@ -28,7 +28,7 @@ When the user store is empty, the sign-in screen prompts you to create the initi
 
 ## Role Workflows
 
-- **Admin:** Create accounts, manage non-Admin roles and account status, view the access log, and view inventory.
+- **Admin:** Create accounts, manage account roles and status (except another Admin’s account), view the access log, and view inventory.
 - **Staff:** Manage Client profiles, add inventory, flag issues, generate safe hampers and review hamper history, set donation-priority categories, and create future drop-off slots.
 - **Volunteer:** View pending hampers, add eligible items, mark hampers packed, view inventory and flag issues. The packing view shows hamper IDs, item names and quantities—not client profile details.
 - **Donor:** Submit offers of up to five item categories, view priority categories, book a free future slot, acknowledge the food-safety checklist and receive a booking receipt.
@@ -69,7 +69,7 @@ Other current limitations:
 - Deleting a Client profile does not delete the Client account or linked hamper history.
 - Inventory issue flags are displayed but are not used by hamper matching.
 - Donation offers are stored separately and are not automatically added to inventory.
-- Backup/restore, load testing, screen-reader accessibility and think-aloud usability require separate procedures and evidence.
+- Backup/restore, load testing and screen-reader accessibility still require separate evidence. The think-aloud usability sessions are reported in the SRS; proposed interface improvements have not yet been retested.
 
 ## Project Structure
 
